@@ -1,4 +1,5 @@
-pub mod domain;
+mod domain;
+mod providers;
 
 use axum::{
     routing::{get, post},

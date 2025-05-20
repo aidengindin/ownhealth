@@ -1,6 +1,18 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Serializer};
 use std::fmt::Debug;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct UserId (Uuid);
+impl UserId {
+    pub fn new() -> Self {
+        UserId(Uuid::new_v4())
+    }
+    pub fn from_existing(id: &str) -> Result<Self, uuid::Error> {
+        Ok(UserId(Uuid::parse_str(id)?))
+    }
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub enum Unit {
@@ -13,6 +25,15 @@ pub enum Unit {
     Min,
     #[serde(rename = "score_100")]
     Score100,
+}
+
+pub enum DataType {
+    HeartRate,
+    Weight,
+    Hydration,
+    VO2Max,
+    SleepDuration,
+    SleepStage,
 }
 
 pub trait DataTypeT {
