@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Serializer};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use uuid::Uuid;
+use sqlx::{postgres::PgRow, Error as SqlxError, Result, Row};
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct UserId (Uuid);
@@ -11,6 +12,11 @@ impl UserId {
     }
     pub fn from_existing(id: &str) -> Result<Self, uuid::Error> {
         Ok(UserId(Uuid::parse_str(id)?))
+    }
+}
+impl Display for UserId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -41,6 +47,7 @@ pub trait DataTypeT {
 
     fn unit() -> Unit;
     fn name() -> &'static str;
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError>;
 }
 
 #[derive(Serialize, Debug)]
@@ -50,6 +57,10 @@ impl DataTypeT for HeartRateType {
 
     fn unit() -> Unit { Unit::Bpm }
     fn name() -> &'static str { "Heart rate" }
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError> {
+        let value: i32 = row.try_get("value")?;
+        u16::try_from(value).map_err(|_| SqlxError::ColumnNotFound("Value out of range for u16".to_string()))
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -59,6 +70,10 @@ impl DataTypeT for WeightType {
 
     fn unit() -> Unit { Unit::Kg }
     fn name() -> &'static str { "Weight" }
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError> {
+        let value: f64 = row.try_get("value")?;
+        Ok(value)
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -68,6 +83,10 @@ impl DataTypeT for HydrationType {
 
     fn unit() -> Unit { Unit::Ml }
     fn name() -> &'static str { "Hydration" }
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError> {
+        let value: f64 = row.try_get("value")?;
+        Ok(value)
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -77,6 +96,10 @@ impl DataTypeT for VO2MaxType {
 
     fn unit() -> Unit { Unit::VO2Max }
     fn name() -> &'static str { "VO2Max" }
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError> {
+        let value: f64 = row.try_get("value")?;
+        Ok(value)
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -86,9 +109,13 @@ impl DataTypeT for SleepDurationType {
 
     fn unit() -> Unit { Unit::Min }
     fn name() -> &'static str { "Sleep duration" }
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError> {
+        Ok(row.try_get("value")?)
+    }
 }
 
-#[derive(Clone, Serialize, Debug, Copy, PartialEq, Eq)]
+#[derive(Clone, Serialize, Debug, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "sleep_stage", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
 pub enum SleepStage {
     Awake,
@@ -104,6 +131,9 @@ impl DataTypeT for SleepStageType {
 
     fn unit() -> Unit { Unit::Unitless }
     fn name() -> &'static str { "Sleep stage" }
+    fn from_db_row(row: &PgRow) -> Result<Self::ValueType, SqlxError> {
+        Ok(row.try_get("value")?)
+    }
 }
 
 impl Unit {

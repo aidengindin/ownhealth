@@ -1,5 +1,6 @@
 mod domain;
 mod providers;
+mod database;
 
 use axum::{
     routing::{get, post},
