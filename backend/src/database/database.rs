@@ -8,16 +8,21 @@ use crate::domain::{
     UserId,
 };
 
+use crate::config::config::AppConfig;
+
 #[derive(Clone)]
 pub struct Database {
     pool: Pool<Postgres>,
 }
 
 impl Database {
-    pub async fn new() -> Result<Self, SqlxError> {
-        // TODO: replace with config-based string
-        let connection_string = "postgres://user:pass@host/database";
-        let pool = PgPool::connect(connection_string).await?;
+    pub async fn new(config: AppConfig) -> Result<Self, SqlxError> {
+        let database_config = config.database;
+        let connection_string = format!(
+            "postgres://{}:{}@{}/{}",
+            database_config.user, database_config.password, database_config.host, database_config.db_name
+        );
+        let pool = PgPool::connect(&connection_string).await?;
         Ok(Database { pool })
     }
 

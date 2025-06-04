@@ -1,0 +1,17 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=ownhealth
+      - POSTGRES_PASSWORD=ownhealth
+      - POSTGRES_DB=ownhealth
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    restart: unless-stopped
+
+volumes:
+  timescaledb_data:
+    driver: local

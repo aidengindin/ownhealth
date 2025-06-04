@@ -1,6 +1,7 @@
+mod config;
 mod domain;
-mod providers;
 mod database;
+mod providers;
 
 use axum::{
     routing::{get, post},
@@ -25,6 +26,10 @@ use domain::{
     SleepDurationType,
 };
 
+use crate::config::config::AppConfig;
+
+use crate::database::database::Database;
+
 #[derive(Deserialize, Debug)]
 struct MetricParams {
     metric_name: String,
@@ -44,6 +49,8 @@ enum AnyDataPointSeries {
 
 #[tokio::main]
 async fn main() {
+    let config = AppConfig::new().expect("Failed to load configuration");
+
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .init();
@@ -57,6 +64,7 @@ async fn main() {
     axum::serve(listener, app)
         .await
         .expect("Server failed");
+    debug!("Backend listening on port 3000");
 }
 
 async fn metric_handler(
